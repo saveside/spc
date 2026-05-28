@@ -11,6 +11,7 @@
 #define BACKLOG 5
 #define MAX_CLIENTS 10 
 #define NFDS (MAX_CLIENTS + 1)
+#define PORT 8080
 
 typedef struct {
   int fd;
@@ -40,7 +41,7 @@ int main() {
   memset(&server_addr, 0, sizeof(server_addr));
 
   server_addr.sin_family = AF_INET;                 
-  server_addr.sin_port = htons(8080);
+  server_addr.sin_port = htons(PORT);
   server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
   if (sock_fd < 0) {
@@ -141,7 +142,7 @@ int main() {
   }
 
   close(sock_fd);
-  log_info("Closed main server socket. :pleadey:");
+  log_info("Closed main server socket.");
 
   return 0;
 }
