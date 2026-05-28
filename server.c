@@ -132,6 +132,8 @@ int handle_client_data(int i, struct pollfd *fds, ClientProfile *profiles, nfds_
         if (profiles[i].username[0] == '\0') {
             strncpy(profiles[i].username, buffer, sizeof(profiles[i].username) - 1);
             profiles[i].username[sizeof(profiles[i].username) - 1] = '\0';
+            char *prompt = "> ";
+            write(fds[i].fd, prompt, strlen(prompt));
         } 
         else {
             char chat_msg[1500];
@@ -141,8 +143,12 @@ int handle_client_data(int i, struct pollfd *fds, ClientProfile *profiles, nfds_
             for (int j = 1; j < *cnfds; j++) {
                 if (fds[j].fd != fds[i].fd && fds[j].fd > 0) {
                     write(fds[j].fd, chat_msg, strlen(chat_msg));
+                    char *prompt = "> ";
+                    write(fds[j].fd, prompt, strlen(prompt));
                 }
             }
+            char *prompt = "> ";
+            write(fds[i].fd, prompt, strlen(prompt));
         }
         return 0;
     }
