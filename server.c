@@ -78,6 +78,15 @@ void handle_new_connection(int sock_fd, struct pollfd *fds, ClientProfile *profi
         log_err("Failed to accept incoming client connection.");
         return;
     }
+    
+    if (*cnfds > NFDS) {
+      log_err("Server Full. Rejecting connection on fd: %d", client_fd);
+      char *reject_msg = "Server is currently full. Please try again later.\n";
+      write(client_fd, reject_msg, strlen(reject_msg));
+      close(client_fd);
+      return;
+    }
+
     log_info("Client connected with fd: %d", client_fd);
 
     profiles[*cnfds].fd = client_fd;
