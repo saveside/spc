@@ -1,4 +1,5 @@
-#include "lib/logger.h"
+#include "../lib/logger.h"
+#include "commands.c"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -13,12 +14,6 @@
 #define MAX_CLIENTS 10 
 #define NFDS (MAX_CLIENTS + 1)
 #define PORT 8080
-
-typedef struct {
-    int fd;
-    char username[32];
-    char id[6];
-} ClientProfile;
 
 void randomId(char *str, int length) {
     char charset[] = "0123456789"
@@ -79,7 +74,7 @@ void handle_new_connection(int sock_fd, struct pollfd *fds, ClientProfile *profi
         return;
     }
     
-    if (*cnfds > NFDS) {
+    if (*cnfds >= NFDS) {
       log_err("Server Full. Rejecting connection on fd: %d", client_fd);
       char *reject_msg = "Server is currently full. Please try again later.\n";
       write(client_fd, reject_msg, strlen(reject_msg));
@@ -113,6 +108,7 @@ int handle_client_data(int i, struct pollfd *fds, ClientProfile *profiles, nfds_
     char buffer[1024];
     memset(buffer, 0, sizeof(buffer));
     ssize_t bytes_read = read(fds[i].fd, buffer, sizeof(buffer) - 1);
+    buffer[strcspn(buffer, "\r\n")] = '\0';
 
     if (bytes_read < 0) {
         log_err("Failed to read message.");
@@ -125,10 +121,22 @@ int handle_client_data(int i, struct pollfd *fds, ClientProfile *profiles, nfds_
         profiles[i] = profiles[*cnfds - 1];
         (*cnfds)--;
         return 1;
-    } 
+    } else if (buffer[0] == '/') {
+      char *command = buffer + 1;
+      char *arg = NULL;
+      char *space = strchr(command, ' ');
+      if (space != NULL) {
+        *space = '\0';
+        arg = space + 1;
+      } else {
+        arg = "";
+      }
+      if (check_cmd(command) == false) {
+        char *cmdNotFound_msg = "Command Not Found!";
+        write(fds[i].fd, cmdNotFound_msg, strlen(cmdNotFound_msg));
+      }
+    }
     else {
-        buffer[strcspn(buffer, "\r\n")] = '\0';
-
         if (profiles[i].username[0] == '\0') {
             strncpy(profiles[i].username, buffer, sizeof(profiles[i].username) - 1);
             profiles[i].username[sizeof(profiles[i].username) - 1] = '\0';

@@ -1,0 +1,19 @@
+#ifndef COMMANDS_H
+#define COMMANDS_H
+
+#include <poll.h>
+
+typedef struct {
+    int fd;
+    char username[32];
+    char id[6];
+} ClientProfile;
+
+typedef struct {
+    char *cmd_name;
+    void (*handler)(int client_idx, char *arg, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
+} Command;
+
+int handle_command(char *buffer, int client_idx, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
+
+#endif // COMMANDS_H
