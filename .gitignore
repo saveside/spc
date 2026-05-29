@@ -1,2 +1,4 @@
 server
 compile_flags.txt
+src/*.o
+src/*.d

@@ -16,6 +16,36 @@
 #define NFDS (MAX_CLIENTS + 1)
 #define PORT 8080
 
+void handle_chat_command(int client_fd, char *buffer) {
+      char *command = buffer + 1;
+      char *arg = NULL;
+      char *space = strchr(command, ' ');
+      if (space != NULL) {
+        *space = '\0';
+        arg = space + 1;
+      } else {
+        arg = "";
+      }
+      if (check_cmd(command) == false) {
+        char *cmdNotFound_msg = "Command Not Found!";
+        write(client_fd, cmdNotFound_msg, strlen(cmdNotFound_msg));
+      }
+}
+
+void broadcast_message(int sender_idx, const char *msg, struct pollfd *fds, ClientProfile *profiles, nfds_t cnfds) {
+    char chat_msg[1500];
+    snprintf(chat_msg, sizeof(chat_msg), "[%s]: %s\n", profiles[sender_idx].username, msg);
+    printf("#%s [%s]: %s\n", profiles[sender_idx].id, profiles[sender_idx].username, msg);
+
+    for (int j = 1; j < cnfds; j++) {
+        if (fds[j].fd != fds[sender_idx].fd && fds[j].fd > 0) {
+            write(fds[j].fd, chat_msg, strlen(chat_msg));
+            write(fds[j].fd, "\n> ", 2);
+        }
+    }
+    write(fds[sender_idx].fd, "\n> ", 2);
+}
+
 int init_server() {
     int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in server_addr;
@@ -100,52 +130,30 @@ int handle_client_data(int i, struct pollfd *fds, ClientProfile *profiles, nfds_
         log_err("Failed to read message.");
         return 0;
     }
-    else if (bytes_read == 0) {
+
+    if (bytes_read == 0) {
         log_warn("Client disconnected without sending anything.");
         close(fds[i].fd);
         fds[i] = fds[*cnfds - 1];
         profiles[i] = profiles[*cnfds - 1];
         (*cnfds)--;
         return 1;
-    } else if (buffer[0] == '/') {
-      char *command = buffer + 1;
-      char *arg = NULL;
-      char *space = strchr(command, ' ');
-      if (space != NULL) {
-        *space = '\0';
-        arg = space + 1;
-      } else {
-        arg = "";
-      }
-      if (check_cmd(command) == false) {
-        char *cmdNotFound_msg = "Command Not Found!";
-        write(fds[i].fd, cmdNotFound_msg, strlen(cmdNotFound_msg));
-      }
-    }
-    else {
-        if (profiles[i].username[0] == '\0') {
-            strncpy(profiles[i].username, buffer, sizeof(profiles[i].username) - 1);
-            profiles[i].username[sizeof(profiles[i].username) - 1] = '\0';
-            char *prompt = "> ";
-            write(fds[i].fd, prompt, strlen(prompt));
-        } 
-        else {
-            char chat_msg[1500];
-            snprintf(chat_msg, sizeof(chat_msg), "[%s]: %s\n", profiles[i].username, buffer);
-            printf("#%s [%s]: %s\n", profiles[i].id, profiles[i].username, buffer);
+    } 
 
-            for (int j = 1; j < *cnfds; j++) {
-                if (fds[j].fd != fds[i].fd && fds[j].fd > 0) {
-                    write(fds[j].fd, chat_msg, strlen(chat_msg));
-                    char *prompt = "> ";
-                    write(fds[j].fd, prompt, strlen(prompt));
-                }
-            }
-            char *prompt = "> ";
-            write(fds[i].fd, prompt, strlen(prompt));
-        }
-        return 0;
+    if (buffer[0] == '/') {
+      handle_chat_command(fds[i].fd, buffer);
     }
+    
+    if (profiles[i].username[0] == '\0') {
+      strncpy(profiles[i].username, buffer, sizeof(profiles[i].username) - 1);
+      profiles[i].username[sizeof(profiles[i].username) - 1] = '\0';
+      write(fds[i].fd, "\n> ", 2);
+      return 0;
+    }
+
+    broadcast_message(i, buffer, fds, profiles, *cnfds);
+    return 0;
+
 }
 
 int main() {
