@@ -1,5 +1,6 @@
 #include "../lib/logger.h"
 #include "commands.c"
+#include "utils.c"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -14,21 +15,6 @@
 #define MAX_CLIENTS 10 
 #define NFDS (MAX_CLIENTS + 1)
 #define PORT 8080
-
-void randomId(char *str, int length) {
-    char charset[] = "0123456789"
-                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                     "abcdefghijklmnopqrstuvwxyz";
-                     
-    int charset_size = sizeof(charset) - 1;
-
-    for (int i = 0; i < length; i++) {
-        int key = rand() % charset_size;
-        str[i] = charset[key];
-    }
-    
-    str[length] = '\0';
-}
 
 int init_server() {
     int sock_fd = socket(AF_INET, SOCK_STREAM, 0);

@@ -27,6 +27,5 @@ bool check_cmd(const char *target) {
       break;
     }
   }
-  return false;
+  return found;
 }
-
