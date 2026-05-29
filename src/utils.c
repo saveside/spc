@@ -1,4 +1,4 @@
-#include "../include/utils.h"
+#include "utils.h"
 #include "stdlib.h"
 
 void randomId(char *str, int length) {

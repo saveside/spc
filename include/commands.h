@@ -2,6 +2,7 @@
 #define COMMANDS_H
 
 #include <poll.h>
+#include <stdbool.h>
 
 typedef struct {
     int fd;
@@ -13,6 +14,8 @@ typedef struct {
     char *cmd_name;
     void (*handler)(int client_idx, char *arg, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
 } Command;
+
+bool check_cmd(const char *target);
 
 int handle_command(char *buffer, int client_idx, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
 

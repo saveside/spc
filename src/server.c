@@ -1,6 +1,6 @@
-#include "../lib/logger.h"
-#include "commands.c"
-#include "utils.c"
+#include "logger.h"
+#include "commands.h"
+#include "utils.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
