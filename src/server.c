@@ -16,20 +16,26 @@
 #define NFDS (MAX_CLIENTS + 1)
 #define PORT 8080
 
-void handle_chat_command(int client_fd, char *buffer) {
+void handle_chat_command(int client_idx, char *buffer, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds) {
       char *command = buffer + 1;
       char *arg = NULL;
       char *space = strchr(command, ' ');
+
       if (space != NULL) {
         *space = '\0';
         arg = space + 1;
       } else {
         arg = "";
       }
+
+      int client_fd = fds[client_idx].fd;
+
       if (check_cmd(command) == false) {
         char *cmdNotFound_msg = "Command Not Found!";
         write(client_fd, cmdNotFound_msg, strlen(cmdNotFound_msg));
       }
+      run_cmd(command, client_idx, arg, fds, profiles, cnfds);
+
 }
 
 void broadcast_message(int sender_idx, const char *msg, struct pollfd *fds, ClientProfile *profiles, nfds_t cnfds) {
@@ -40,10 +46,10 @@ void broadcast_message(int sender_idx, const char *msg, struct pollfd *fds, Clie
     for (int j = 1; j < cnfds; j++) {
         if (fds[j].fd != fds[sender_idx].fd && fds[j].fd > 0) {
             write(fds[j].fd, chat_msg, strlen(chat_msg));
-            write(fds[j].fd, "\n> ", 2);
+            write(fds[j].fd, "\n> ", 3);
         }
     }
-    write(fds[sender_idx].fd, "\n> ", 2);
+    write(fds[sender_idx].fd, "\n> ", 3);
 }
 
 int init_server() {
@@ -141,13 +147,13 @@ int handle_client_data(int i, struct pollfd *fds, ClientProfile *profiles, nfds_
     } 
 
     if (buffer[0] == '/') {
-      handle_chat_command(fds[i].fd, buffer);
+      handle_chat_command(i, buffer, fds, profiles, cnfds);
     }
     
     if (profiles[i].username[0] == '\0') {
       strncpy(profiles[i].username, buffer, sizeof(profiles[i].username) - 1);
       profiles[i].username[sizeof(profiles[i].username) - 1] = '\0';
-      write(fds[i].fd, "\n> ", 2);
+      write(fds[i].fd, "\n> ", 3);
       return 0;
     }
 

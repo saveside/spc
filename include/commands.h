@@ -17,6 +17,8 @@ typedef struct {
 
 bool check_cmd(const char *target);
 
+void run_cmd(const char *target, int client_idx, char *arg, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
+
 int handle_command(char *buffer, int client_idx, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
 
 #endif // COMMANDS_H
