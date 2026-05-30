@@ -148,6 +148,7 @@ int handle_client_data(int i, struct pollfd *fds, ClientProfile *profiles, nfds_
 
     if (buffer[0] == '/') {
       handle_chat_command(i, buffer, fds, profiles, cnfds);
+      return 0;
     }
     
     if (profiles[i].username[0] == '\0') {

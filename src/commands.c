@@ -64,7 +64,16 @@ void cmd_help(int client_idx, char *arg, struct pollfd *fds, ClientProfile *prof
 }
 
 void cmd_nick(int client_idx, char *arg, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds) {
-  printf("[Test] cmd_nick triggered by client %d with arg: %s\n", client_idx, arg ? arg : "NULL");
+  int client_fd = fds[client_idx].fd;
+  
+  if (arg == NULL || strlen(arg) == 0) {
+    char *err_msg = "Usage: /nick <new_nickname>\r\n> ";
+    write(client_fd, err_msg, strlen(err_msg));
+    return;
+  }
+
+  strncpy(profiles[client_idx].username, arg, sizeof(profiles[client_idx].username) - 1);
+  profiles[client_idx].username[sizeof(profiles[client_idx].username) - 1] = '\0';
 }
 
 void cmd_quit(int client_idx, char *arg, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds) {
