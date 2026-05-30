@@ -158,6 +158,12 @@ int handle_client_data(int i, struct pollfd *fds, ClientProfile *profiles, nfds_
       return 0;
     }
 
+    if (strlen(buffer) == 0 || is_all_whitespace(buffer)) {
+      char *prompt = "\r\n> ";
+      write(fds[i].fd, prompt, strlen(prompt));
+      return 0;
+    }
+
     broadcast_message(i, buffer, fds, profiles, *cnfds);
     return 0;
 

@@ -15,3 +15,8 @@ void randomId(char *str, int length) {
     
     str[length] = '\0';
 }
+
+int is_all_whitespace(const char *str) {
+    if (*str == '\0') return 1;
+    return 1;
+}
