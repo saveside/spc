@@ -13,6 +13,7 @@ typedef struct {
 typedef struct {
     char *cmd_name;
     void (*handler)(int client_idx, char *arg, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
+    const char *description;
 } Command;
 
 bool check_cmd(const char *target);
