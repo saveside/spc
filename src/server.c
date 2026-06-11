@@ -149,6 +149,12 @@ int handle_client_data(int i, struct pollfd *fds, ClientProfile *profiles, nfds_
     }
     
     if (profiles[i].username[0] == '\0') {
+      for (int j = 0; j < *cnfds; j++) {
+        if (strcmp(profiles[j].username, buffer) == 0) {
+          sendToClient(fds[i].fd, "This username is taken. Please try a different name.\n> ");
+          return 0;
+        }
+      }
       strncpy(profiles[i].username, buffer, sizeof(profiles[i].username) - 1);
       profiles[i].username[sizeof(profiles[i].username) - 1] = '\0';
       write(fds[i].fd, "\n> ", 3);
