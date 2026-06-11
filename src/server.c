@@ -1,6 +1,7 @@
 #include "logger.h"
 #include "commands.h"
 #include "utils.h"
+#include <rooms.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -17,36 +18,31 @@
 #define PORT 8080
 
 void handle_chat_command(int client_idx, char *buffer, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds) {
-      char *command = buffer + 1;
-      char *arg = NULL;
-      char *space = strchr(command, ' ');
-
-      if (space != NULL) {
-        *space = '\0';
-        arg = space + 1;
-      } else {
-        arg = "";
-      }
-
+      int max_tokens = 10;
+      char *tokens[max_tokens];
+      int token_count = tokenizer(buffer + 1, tokens, max_tokens);
+      char *command = tokens[0]; 
       int client_fd = fds[client_idx].fd;
 
       if (check_cmd(command) == false) {
         char *cmdNotFound_msg = "Command Not Found!";
         write(client_fd, cmdNotFound_msg, strlen(cmdNotFound_msg));
       }
-      run_cmd(command, client_idx, arg, fds, profiles, cnfds);
+      run_cmd(command, client_idx, tokens, token_count, fds, profiles, cnfds);
 
 }
 
 void broadcast_message(int sender_idx, const char *msg, struct pollfd *fds, ClientProfile *profiles, nfds_t cnfds) {
     char chat_msg[1500];
     snprintf(chat_msg, sizeof(chat_msg), "[%s]: %s\n", profiles[sender_idx].username, msg);
-    printf("#%s [%s]: %s\n", profiles[sender_idx].id, profiles[sender_idx].username, msg);
+    printf("#%s [%s] in Room(%s): %s\n", profiles[sender_idx].id, profiles[sender_idx].username, profiles[sender_idx].currentRoom, msg);
 
     for (int j = 1; j < cnfds; j++) {
         if (fds[j].fd != fds[sender_idx].fd && fds[j].fd > 0) {
+          if (strcmp(profiles[j].currentRoom, profiles[sender_idx].currentRoom) == 0) {
             write(fds[j].fd, chat_msg, strlen(chat_msg));
             write(fds[j].fd, "\n> ", 3);
+          }
         }
     }
     write(fds[sender_idx].fd, "\n> ", 3);
@@ -109,6 +105,7 @@ void handle_new_connection(int sock_fd, struct pollfd *fds, ClientProfile *profi
     profiles[*cnfds].fd = client_fd;
     profiles[*cnfds].username[0] = '\0';
     randomId(profiles[*cnfds].id, 5);
+    strcpy(profiles[*cnfds].currentRoom, "Lobby");
 
     char welcome_msg[256];
     snprintf(welcome_msg, sizeof(welcome_msg),
@@ -155,12 +152,6 @@ int handle_client_data(int i, struct pollfd *fds, ClientProfile *profiles, nfds_
       strncpy(profiles[i].username, buffer, sizeof(profiles[i].username) - 1);
       profiles[i].username[sizeof(profiles[i].username) - 1] = '\0';
       write(fds[i].fd, "\n> ", 3);
-      return 0;
-    }
-
-    if (strlen(buffer) == 0 || is_all_whitespace(buffer)) {
-      char *prompt = "\r\n> ";
-      write(fds[i].fd, prompt, strlen(prompt));
       return 0;
     }
 

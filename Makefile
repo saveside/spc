@@ -6,8 +6,8 @@ TARGET   := server
 .PHONY: all
 all: $(TARGET)
 
-$(TARGET): src/server.o src/commands.o src/utils.o
-	$(CC) $(CFLAGS) src/server.o src/commands.o src/utils.o -o $(TARGET)
+$(TARGET): src/server.o src/commands.o src/utils.o src/rooms.o
+	$(CC) $(CFLAGS) src/server.o src/commands.o src/utils.o src/rooms.o -o $(TARGET)
 
 src/server.o: src/server.c
 	$(CC) $(CFLAGS) -c src/server.c -o src/server.o
@@ -17,6 +17,9 @@ src/commands.o: src/commands.c
 
 src/utils.o: src/utils.c
 	$(CC) $(CFLAGS) -c src/utils.c -o src/utils.o
+
+src/rooms.o: src/rooms.c
+	$(CC) $(CFLAGS) -c src/rooms.c -o src/rooms.o
 
 .PHONY: run
 run: all
