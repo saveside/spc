@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
+#include "history.h"
 
 #define BACKLOG 5
 #define MAX_CLIENTS 10 
@@ -157,11 +158,15 @@ int handle_client_data(int i, struct pollfd *fds, ClientProfile *profiles, nfds_
       }
       strncpy(profiles[i].username, buffer, sizeof(profiles[i].username) - 1);
       profiles[i].username[sizeof(profiles[i].username) - 1] = '\0';
+      history_print(fds[i].fd);
       write(fds[i].fd, "\n> ", 3);
       return 0;
     }
 
     broadcast_message(i, buffer, fds, profiles, *cnfds);
+    char historyMessage[MAX_MSG_LEN];
+    snprintf(historyMessage, sizeof(historyMessage), "[%s]: %s\n", profiles[i].username, buffer);
+    history_save(historyMessage);
     return 0;
 
 }
