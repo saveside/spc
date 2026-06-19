@@ -3,3 +3,7 @@ compile_flags.txt
 src/*.o
 src/*.d
 build
+client/client
+client/*.exe
+client/*.test
+client/*.prof
