@@ -11,8 +11,8 @@ typedef struct {
   char name[32];
   char password[32];
   bool isPublic;
-  char roomId[6];
-  char roomAdmin[6];
+  char roomId[16];
+  char roomAdmin[16];
 } Room;
 
 typedef enum {
@@ -23,6 +23,10 @@ typedef enum {
 } RoomStatus;
 
 RoomStatus createRoom(const char *room_name, const char *password, bool is_public, int client_idx, ClientProfile *profiles);
+
+bool isRoomAdmin(const Room *room, int client_idx, ClientProfile *profiles);
+
+void kickUserFromRoom(int idx, const char *username, ClientProfile *profiles);
 
 extern Room rooms[MAX_ROOMS];
 
