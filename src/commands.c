@@ -9,6 +9,8 @@
 #include <logger.h>
 #include <utils.h>
 
+#define MAX_CLIENTS 10
+
 void cmd_help(int client_idx, char *tokens[], int token_count, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
 void cmd_nick(int client_idx, char *tokens[], int token_count, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
 void cmd_quit(int client_idx, char *tokens[], int token_count, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
@@ -16,6 +18,7 @@ void cmd_room(int client_idx, char *tokens[], int token_count, struct pollfd *fd
 void cmd_kick(int client_idx, char *tokens[], int token_count, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
 void cmd_mute(int client_idx, char *tokens[], int token_count, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
 void cmd_unmute(int client_idx, char *tokens[], int token_count, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
+void cmd_users(int client_idx, char *tokens[], int token_count, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
 
 static void handle_room_create(int client_fd, int client_idx, char *tokens[], int token_count, ClientProfile *profiles);
 static void handle_room_list(int client_fd);
@@ -29,7 +32,8 @@ Command command_list[] = {
     { "room", cmd_room, "Creates a Room with specified arguments." },
     { "kick", cmd_kick, "Kicks user from current room. Requires Room Admin Permission!" },
     { "mute", cmd_mute, "Mute a user. Requires Room Admin Permission!" },
-    { "unmute", cmd_unmute, "Unmute a user. Requires Room Admin Permission!" }
+    { "unmute", cmd_unmute, "Unmute a user. Requires Room Admin Permission!" },
+    { "users", cmd_users, "Displays all users in the current room." }
 };
 
 bool check_cmd(const char *target) {
@@ -284,4 +288,27 @@ void cmd_unmute(int client_idx, char *tokens[], int token_count, struct pollfd *
 
     sendToClient(fds[mutedUser].fd, mutedMsg);
     sendToClient(fds[client_idx].fd, adminMsg);
+}
+
+void cmd_users(int client_idx, char *tokens[], int token_count, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds) {
+    int client_fd = fds[client_idx].fd;
+    char users_buffer[2048];
+    int offset = 0;
+
+    offset += snprintf(users_buffer + offset, sizeof(users_buffer) - offset,
+                       "\n============ USERS IN ROOM ============\n");
+
+    int size = sizeof(command_list) / sizeof(command_list[0]);
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if (strcmp(profiles[client_idx].currentRoom, profiles[i].currentRoom) == 0) {
+            offset += snprintf(users_buffer + offset, sizeof(users_buffer) - offset,
+                           "  %-8s\n",
+                           profiles[i].username);
+        }
+    }
+
+    offset += snprintf(users_buffer + offset, sizeof(users_buffer) - offset,
+                       "=======================================\n>");
+
+    sendToClient(client_fd, users_buffer);
 }
