@@ -26,7 +26,9 @@ RoomStatus createRoom(const char *room_name, const char *password, bool is_publi
 
 bool isRoomAdmin(const Room *room, int client_idx, ClientProfile *profiles);
 
-void kickUserFromRoom(int idx, const char *username, ClientProfile *profiles);
+void kickUserFromRoom(int idx, ClientProfile *profiles);
+
+void toggleMuteUser(int idx, ClientProfile *profiles);
 
 extern Room rooms[MAX_ROOMS];
 

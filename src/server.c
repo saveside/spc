@@ -14,7 +14,7 @@
 #include "history.h"
 
 #define BACKLOG 5
-#define MAX_CLIENTS 10 
+#define MAX_CLIENTS 10
 #define NFDS (MAX_CLIENTS + 1)
 #define PORT 8080
 
@@ -22,7 +22,7 @@ void handle_chat_command(int client_idx, char *buffer, struct pollfd *fds, Clien
       int max_tokens = 10;
       char *tokens[max_tokens];
       int token_count = tokenizer(buffer + 1, tokens, max_tokens);
-      char *command = tokens[0]; 
+      char *command = tokens[0];
       int client_fd = fds[client_idx].fd;
 
       if (check_cmd(command) == false) {
@@ -55,7 +55,7 @@ int init_server() {
 
     memset(&server_addr, 0, sizeof(server_addr));
 
-    server_addr.sin_family = AF_INET;                 
+    server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
@@ -64,14 +64,14 @@ int init_server() {
         return -1;
     }
     log_info("Created a  socket.");
-  
+
     if (bind(sock_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         log_err("Failed to bind socket.");
         close(sock_fd);
         return -1;
-    } 
+    }
     log_info("Bond socket.");
-  
+
     if (listen(sock_fd, BACKLOG) < 0) {
         log_err("Failed to listen socket.");
         close(sock_fd);
@@ -92,7 +92,7 @@ void handle_new_connection(int sock_fd, struct pollfd *fds, ClientProfile *profi
         log_err("Failed to accept incoming client connection.");
         return;
     }
-    
+
     if (*cnfds >= NFDS) {
       log_err("Server Full. Rejecting connection on fd: %d", client_fd);
       char *reject_msg = "Server is currently full. Please try again later.\n";
@@ -107,6 +107,7 @@ void handle_new_connection(int sock_fd, struct pollfd *fds, ClientProfile *profi
     profiles[*cnfds].username[0] = '\0';
     randomId(profiles[*cnfds].id, 5);
     strcpy(profiles[*cnfds].currentRoom, "Lobby");
+    profiles[*cnfds].isMuted = false;
 
     char welcome_msg[256];
     snprintf(welcome_msg, sizeof(welcome_msg),
@@ -114,7 +115,7 @@ void handle_new_connection(int sock_fd, struct pollfd *fds, ClientProfile *profi
              "Welcome to the Save's Pocket Chat Server!\n"
              "Your auto-generated ID is: [%s]\n"
              "==========================================\n"
-             "Please enter your username: ", 
+             "Please enter your username: ",
              profiles[*cnfds].id);
     write(client_fd, welcome_msg, strlen(welcome_msg));
 
@@ -142,13 +143,18 @@ int handle_client_data(int i, struct pollfd *fds, ClientProfile *profiles, nfds_
         profiles[i] = profiles[*cnfds - 1];
         (*cnfds)--;
         return 1;
-    } 
+    }
+
+    if (profiles[i].isMuted && strcmp(profiles[i].currentRoom, "Lobby") != 0) {
+        sendToClient(fds[i].fd, "You are muted!\n");
+        return 0;
+    }
 
     if (buffer[0] == '/') {
       handle_chat_command(i, buffer, fds, profiles, cnfds);
       return 0;
     }
-    
+
     if (profiles[i].username[0] == '\0') {
       for (int j = 0; j < *cnfds; j++) {
         if (strcmp(profiles[j].username, buffer) == 0) {
@@ -187,7 +193,7 @@ int main() {
     fds[0].revents = 0;
 
     nfds_t cnfds = 1;
-  
+
     while (1) {
         int activity = poll(fds, cnfds, -1);
         if (activity < 0) {

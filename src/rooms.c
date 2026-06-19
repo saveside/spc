@@ -58,7 +58,11 @@ bool isRoomAdmin(const Room *room, int client_idx, ClientProfile *profiles) {
     return false;
 }
 
-void kickUserFromRoom(int idx, const char *username, ClientProfile *profiles) {
+void kickUserFromRoom(int idx, ClientProfile *profiles) {
     strncpy(profiles[idx].currentRoom, "Lobby", sizeof(profiles[idx].currentRoom) - 1);
     profiles[idx].currentRoom[sizeof(profiles[idx].currentRoom) - 1] = '\0';
+}
+
+void toggleMuteUser(int idx, ClientProfile *profiles) {
+    profiles[idx].isMuted = !profiles[idx].isMuted;
 }
