@@ -15,6 +15,7 @@ void cmd_quit(int client_idx, char *tokens[], int token_count, struct pollfd *fd
 void cmd_room(int client_idx, char *tokens[], int token_count, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
 void cmd_kick(int client_idx, char *tokens[], int token_count, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
 void cmd_mute(int client_idx, char *tokens[], int token_count, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
+void cmd_unmute(int client_idx, char *tokens[], int token_count, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
 
 static void handle_room_create(int client_fd, int client_idx, char *tokens[], int token_count, ClientProfile *profiles);
 static void handle_room_list(int client_fd);
@@ -27,7 +28,8 @@ Command command_list[] = {
     { "quit", cmd_quit, "Safely disconnects you from the chat server." },
     { "room", cmd_room, "Creates a Room with specified arguments." },
     { "kick", cmd_kick, "Kicks user from current room. Requires Room Admin Permission!" },
-    { "mute", cmd_mute, "Mute a user. Requires Room Admin Permission!" }
+    { "mute", cmd_mute, "Mute a user. Requires Room Admin Permission!" },
+    { "unmute", cmd_unmute, "Unmute a user. Requires Room Admin Permission!" }
 };
 
 bool check_cmd(const char *target) {
@@ -242,7 +244,6 @@ void cmd_kick(int client_idx, char *tokens[], int token_count, struct pollfd *fd
     sendToClient(fds[kickedIdx].fd, "> ");
 }
 
-
 void cmd_mute(int client_idx, char *tokens[], int token_count, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds) {
     int mutedUser = getClientIdxByUsername(tokens[1], profiles);
     int roomIdx = getRoomIdxByRoomname(profiles[client_idx].currentRoom);
@@ -255,15 +256,32 @@ void cmd_mute(int client_idx, char *tokens[], int token_count, struct pollfd *fd
         return;
     }
 
-    toggleMuteUser(mutedUser, profiles);
+    profiles[mutedUser].isMuted = true;
 
-    if (profiles[mutedUser].isMuted) {
-        snprintf(adminMsg, sizeof(adminMsg), "System: You have muted %s.\n", profiles[mutedUser].username);
-        snprintf(mutedMsg, sizeof(mutedMsg), "System: You have been muted by the room admin (%s).\n", profiles[client_idx].username);
-    } else {
-        snprintf(adminMsg, sizeof(adminMsg), "System: You have unmuted %s.\n", profiles[mutedUser].username);
-        snprintf(mutedMsg, sizeof(mutedMsg), "System: You have been unmuted by the room admin (%s).\n", profiles[client_idx].username);
+    snprintf(adminMsg, sizeof(adminMsg), "System: You have muted %s.\n", profiles[mutedUser].username);
+    snprintf(mutedMsg, sizeof(mutedMsg), "System: You have been muted by the room admin (%s).\n", profiles[client_idx].username);
+
+    sendToClient(fds[mutedUser].fd, mutedMsg);
+    sendToClient(fds[client_idx].fd, adminMsg);
+}
+
+void cmd_unmute(int client_idx, char *tokens[], int token_count, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds) {
+    int mutedUser = getClientIdxByUsername(tokens[1], profiles);
+    int roomIdx = getRoomIdxByRoomname(profiles[client_idx].currentRoom);
+    char adminMsg[128];
+    char mutedMsg[128];
+
+    if (strcmp(profiles[mutedUser].currentRoom, "Lobby") == 0) return;
+    if (strcmp(rooms[roomIdx].roomAdmin, profiles[client_idx].id) != 0) {
+        sendToClient(fds[client_idx].fd, "You are not allowed to use this command!");
+        return;
     }
+
+    profiles[mutedUser].isMuted = false;
+
+    snprintf(adminMsg, sizeof(adminMsg), "System: You have unmuted %s.\n", profiles[mutedUser].username);
+    snprintf(mutedMsg, sizeof(mutedMsg), "System: You have been unmuted by the room admin (%s).\n", profiles[client_idx].username);
+
     sendToClient(fds[mutedUser].fd, mutedMsg);
     sendToClient(fds[client_idx].fd, adminMsg);
 }
