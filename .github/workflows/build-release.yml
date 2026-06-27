@@ -1,0 +1,62 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build (${{ matrix.targetarch }})
+    strategy:
+      matrix:
+        include:
+          - runs-on: ubuntu-latest
+            platform: linux/amd64
+            targetarch: amd64
+          - runs-on: ubuntu-24.04-arm
+            platform: linux/arm64
+            targetarch: arm64
+    runs-on: ${{ matrix.runs-on }}
+    
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v7
+
+      - name: Install dependecies
+        run: sudo apt-get update && sudo apt-get install -y cmake build-essential
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Prepare Binary
+        run: | 
+          mkdir -p dist
+          cp build/server dist/spc-${{ matrix.targetarch }}-v${{ github.ref_name }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: spc-${{ matrix.targetarch }}
+          path: dist/
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: artifacts/**/*
