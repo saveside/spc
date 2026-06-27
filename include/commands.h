@@ -12,6 +12,9 @@ typedef struct {
     const char *description;
 } Command;
 
+extern Command command_list[];
+extern const int command_count;
+
 bool check_cmd(const char *target);
 
 void run_cmd(const char *target, int client_idx, char *tokens[], int token_count, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds);
