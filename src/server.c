@@ -12,11 +12,48 @@
 #include <time.h>
 #include <stdio.h>
 #include "history.h"
+#include <argp.h>
 
 #define BACKLOG 5
 #define MAX_CLIENTS 10
 #define NFDS (MAX_CLIENTS + 1)
-#define PORT 8080
+
+const char *argp_program_version = "server 1.0";
+const char *argp_program_bug_address = "savew.sh@proton.me";
+static char args_doc[] = "start";
+static char doc[] = "Save's Pocket Chat Server - A simple C-based chat server.";
+
+struct arguments {
+    int port;
+    char *command;
+};
+
+static int parse_opt (int key, char *arg, struct argp_state *state) {
+  struct arguments *args = state->input;
+  switch (key) {
+    case 'p':
+      args->port = atoi(arg);
+      break;
+    case ARGP_KEY_ARG:
+      // If we already have a command, this is an extra argument
+      if (state->arg_num == 0) {
+        args->command = arg;
+      } else {
+        argp_error(state, "Too many arguments: %s", arg);
+      }
+      break;
+    default:
+      return ARGP_ERR_UNKNOWN;
+  }
+  return 0;
+}
+
+static struct argp_option options[] = {
+  {"port", 'p', "PORT", 0, "Port number to listen on (default: 8080)"},
+  { 0 }
+};
+
+static struct argp argp = { options, parse_opt, args_doc, doc };
 
 void handle_chat_command(int client_idx, char *buffer, struct pollfd *fds, ClientProfile *profiles, nfds_t *cnfds) {
       int max_tokens = 10;
@@ -49,14 +86,14 @@ void broadcast_message(int sender_idx, const char *msg, struct pollfd *fds, Clie
     write(fds[sender_idx].fd, "\n> ", 3);
 }
 
-int init_server() {
+int init_server(int port) {
     int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in server_addr;
 
     memset(&server_addr, 0, sizeof(server_addr));
 
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(PORT);
+    server_addr.sin_port = htons(port);
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     if (sock_fd < 0) {
@@ -177,10 +214,19 @@ int handle_client_data(int i, struct pollfd *fds, ClientProfile *profiles, nfds_
 
 }
 
-int main() {
+int main(int argc, char **argv) {
+    struct arguments args = { .port = 8080, .command = NULL };
+    argp_parse(&argp, argc, argv, 0, 0, &args);
+    
+    if (args.command == NULL || strcmp(args.command, "start") != 0) {
+      fprintf(stderr, "Error: You must specify the command 'start'.\n\n");
+      argp_help(&argp, stderr, ARGP_HELP_STD_HELP, "server");
+      exit(1);
+    }
+
     srand(time(NULL));
 
-    int sock_fd = init_server();
+    int sock_fd = init_server(args.port);
     if (sock_fd < 0) {
         return 1;
     }

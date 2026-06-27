@@ -24,7 +24,12 @@ cmake --build .
 ## Usage
 To use spc, simply run the command below in your terminal:
 ```bash
-./server
+./server start
+```
+
+To change the default port (8080), use the -p or --port flag:
+```bash
+./server start --port 9000
 ```
 
 You can connect to server using standard networking tools like netcat (nc) or telnet.
