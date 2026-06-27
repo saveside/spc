@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.0)
+cmake_minimum_required(VERSION 3.22)
 project(spc)
 
 set(CMAKE_C_STANDARD 11)

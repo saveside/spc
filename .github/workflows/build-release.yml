@@ -15,9 +15,11 @@ jobs:
           - runs-on: ubuntu-latest
             platform: linux/amd64
             targetarch: amd64
+            os: linux
           - runs-on: ubuntu-24.04-arm
             platform: linux/arm64
             targetarch: arm64
+            os: linux
     runs-on: ${{ matrix.runs-on }}
     
     steps:
@@ -36,12 +38,12 @@ jobs:
       - name: Prepare Binary
         run: | 
           mkdir -p dist
-          cp build/server dist/spc-${{ matrix.targetarch }}-v${{ github.ref_name }}
+          cp build/server dist/spc-${{ matrix.os }}-${{ matrix.targetarch }}-${{ github.ref_name }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: spc-${{ matrix.targetarch }}
+          name: spc-${{ matrix.os }}-${{ matrix.targetarch }}-${{ github.ref_name }}
           path: dist/
 
   release:
